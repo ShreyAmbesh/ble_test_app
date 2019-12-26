@@ -17,18 +17,29 @@ class _ReadWritePageState extends State<ReadWritePage> {
   TextEditingController _controller;
   List<Widget> children;
 
+  Widget writeWidget, clearButton;
+
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
+    writeWidget = Row(
+      children: <Widget>[TextField(controller: _controller,),RaisedButton(onPressed: (){
+        widget.charID.write(Uint8List.fromList(_controller.text.codeUnits), true);
+      },child: Text('Write'),)],
+    );
+    clearButton = RaisedButton(onPressed: clear,child: Text('Clear'));
     children = <Widget>[
-      Row(
-        children: <Widget>[TextField(controller: _controller,),RaisedButton(onPressed: (){
-          widget.charID.write(Uint8List.fromList(_controller.text.codeUnits), true);
-        },child: Text('Write'),)],
-      ),
+      writeWidget,
+      clearButton,
     ];
     startReading();
+  }
+
+  clear(){
+    children.clear();
+    children.add(writeWidget);
+    children.add(clearButton);
   }
 
   startReading(){
