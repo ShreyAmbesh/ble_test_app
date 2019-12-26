@@ -12,10 +12,11 @@ void main() {
 class Main extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(home: MyApp(),);
+    return MaterialApp(
+      home: MyApp(),
+    );
   }
 }
-
 
 class MyApp extends StatefulWidget {
   @override
@@ -24,7 +25,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   BleManager bleManager;
-  Map<String,ScanResult> scanResults;
+  Map<String, ScanResult> scanResults;
   bool scanning;
 
   @override
@@ -39,13 +40,13 @@ class _MyAppState extends State<MyApp> {
   }
 
   observeBluetoothState() async {
+    BluetoothState currentState = await bleManager.bluetoothState();
+    bleManager.observeBluetoothState().listen((btState) {
+      print(btState);
+      //do your BT logic, open different screen, etc.
+    });
+  }
 
-  BluetoothState currentState = await bleManager.bluetoothState();
-  bleManager.observeBluetoothState().listen((btState) {
-  print(btState);
-  //do your BT logic, open different screen, etc.
-  });
-}
   @override
   void dispose() {
     // TODO: implement dispose
@@ -56,60 +57,66 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('BLE Test'),centerTitle: true,),
+      appBar: AppBar(
+        title: Text('BLE Test'),
+        centerTitle: true,
+      ),
       body: ListView.builder(
           itemCount: scanResults.length,
-          itemBuilder: (context,index) {
+          itemBuilder: (context, index) {
             Peripheral device = scanResults.values.toList()[index].peripheral;
-        return ListTile(title: Text(device.name ?? 'unknown'),
-        subtitle: Text(device.identifier),
-        trailing: IconButton(icon: Icon(Icons.bluetooth), onPressed: ()async{
-          if(!await device.isConnected()){
-            await device.connect().catchError((err){print(err.toString());}).then((val){
-              print('something');
-            });
-            await device.discoverAllServicesAndCharacteristics();
-            List<Service> services = await device.services();
-            Map<Service,List<Characteristic>> servAndChars = Map();
-            services.forEach((service) async{
-              List<Characteristic> chars = (await service.characteristics());
-              chars.forEach((characterstic)async{
-                print('Service UUID ${service.uuid}');
-                print('Characterstic UUID ${characterstic.uuid}');
-                print('Redable - ${characterstic.isReadable}');
-                print('Indicatable - ${characterstic.isIndicatable}');
-                print('Notifiable - ${characterstic.isNotifiable}');
-                print('Writable Without Response - ${characterstic.isWritableWithoutResponse}');
-                print('Writable With Response - ${characterstic.isWritableWithResponse}');
-                if(characterstic.isReadable){
-                  Uint8List read = await characterstic.read();
-                  print('Temperature - ${_convertToTemperature(read)}');
-                }
-              });
-              servAndChars[service] = chars;
-            });
-            Navigator.of(context).push(CupertinoPageRoute(builder: (context){
-              return DevicePage(servAndChars);
-            }));
+            return ListTile(
+              title: Text(device.name ?? 'unknown'),
+              subtitle: Text(device.identifier),
+              trailing: IconButton(
+                  icon: Icon(Icons.bluetooth),
+                  onPressed: () async {
+                    if (!await device.isConnected()) {
+                      await device.connect().catchError((err) {
+                        print(err.toString());
+                      }).then((val) {
+                        print('something');
+                      });
+                      await device.discoverAllServicesAndCharacteristics();
+                      List<Service> services = await device.services();
+                      Map<Service, List<Characteristic>> servAndChars = Map();
+                      services.forEach((service) async {
+                        List<Characteristic> chars =
+                            (await service.characteristics());
+                        chars.forEach((characterstic) async {
+                          print('Service UUID ${service.uuid}');
+                          print('Characterstic UUID ${characterstic.uuid}');
+                          print('Redable - ${characterstic.isReadable}');
+                          print('Indicatable - ${characterstic.isIndicatable}');
+                          print('Notifiable - ${characterstic.isNotifiable}');
+                          print(
+                              'Writable Without Response - ${characterstic.isWritableWithoutResponse}');
+                          print(
+                              'Writable With Response - ${characterstic.isWritableWithResponse}');
 
-          }
-          else{
-            device.disconnectOrCancelConnection();
-          }
-        }),
-        );
-      }),
+                        });
+                        servAndChars[service] = chars;
+                      });
+                      Navigator.of(context)
+                          .push(CupertinoPageRoute(builder: (context) {
+                        return DevicePage(servAndChars);
+                      }));
+                    } else {
+                      device.disconnectOrCancelConnection();
+                    }
+                  }),
+            );
+          }),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: scanning?Colors.red:Colors.blue,
-        child: Icon(scanning?Icons.stop:Icons.search),
+        backgroundColor: scanning ? Colors.red : Colors.blue,
+        child: Icon(scanning ? Icons.stop : Icons.search),
         onPressed: () async {
-          if(scanning){
+          if (scanning) {
             bleManager.stopPeripheralScan();
             setState(() {
               scanning = false;
             });
-          }
-          else{
+          } else {
             setState(() {
               scanning = true;
               scanResults.clear();
@@ -118,9 +125,10 @@ class _MyAppState extends State<MyApp> {
               //Scan one peripheral and stop scanning
               print(
                   "Scanned Peripheral ${scanResult.peripheral.name}, RSSI ${scanResult.rssi}");
-              setState(() {
-                scanResults[scanResult.peripheral.identifier] = scanResult;
-              });
+              if (scanResult.isConnectable ?? true)
+                setState(() {
+                  scanResults[scanResult.peripheral.identifier] = scanResult;
+                });
               //bleManager.stopPeripheralScan();
             });
           }
@@ -130,8 +138,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   double _convertToTemperature(Uint8List rawTemperatureBytes) {
-    if(rawTemperatureBytes.length<4)
-      return 0.0;
+    if (rawTemperatureBytes.length < 4) return 0.0;
     const double SCALE_LSB = 0.03125;
     int rawTemp = rawTemperatureBytes[3] << 8 | rawTemperatureBytes[2];
     return ((rawTemp) >> 2) * SCALE_LSB;

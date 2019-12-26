@@ -1,8 +1,11 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_ble_lib/flutter_ble_lib.dart';
 
+import 'ReadWritePage.dart';
+
 class DevicePage extends StatefulWidget {
-  Map<Service,List<Characteristic>> serveAndChars;
+  Map<Service, List<Characteristic>> serveAndChars;
 
   DevicePage(this.serveAndChars);
 
@@ -24,13 +27,21 @@ class _DevicePageState extends State<DevicePage> {
       appBar: AppBar(
         title: Text('Device'),
       ),
-      body: ListView.builder(itemBuilder: (context,index){
-        return ExpansionTile(title: Text('Service UUID'),subtitle: Text(widget.serveAndChars.keys.toList()[index].uuid),
-        trailing: Icon(Icons.keyboard_arrow_down),
-        children: widget.serveAndChars.values.toList()[index].map((char){
-          return ListTile(title: Text('Characteristic UUID'),subtitle: Text(char.uuid),);
-        }).toList(),);
-      },itemCount: widget.serveAndChars.length,),
+      body: ListView.builder(itemBuilder: (context, index) {
+        return ExpansionTile(title: Text('Service UUID'),
+          subtitle: Text(widget.serveAndChars.keys.toList()[index].uuid),
+          trailing: Icon(Icons.keyboard_arrow_down),
+          children: widget.serveAndChars.values.toList()[index].map((char) {
+            return ListTile(title: Text('Characteristic UUID'),
+              subtitle: Text(char.uuid),
+              onTap: () {
+                Navigator.of(context).push(CupertinoPageRoute(builder: (
+                    contxt) {
+                  return ReadWritePage(char);
+                }));
+              },);
+          }).toList(),);
+      }, itemCount: widget.serveAndChars.length,),
     );
   }
 }
